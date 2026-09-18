@@ -17,6 +17,10 @@ const state = {
   validation: null,
   versions: loadStorage(STORAGE_KEYS.versions, []),
   queue: loadStorage(STORAGE_KEYS.queue, null),
+  hosted: false,
+  account: null,
+  remoteBotId: null,
+  remoteRevision: 0,
   replay: null,
   battleBots: null,
   currentTick: 0,
@@ -74,14 +78,29 @@ function showToast(message, tone = "good") {
 }
 
 async function api(path, body) {
-  const response = await fetch(path, {
+  const base = String(window.PROMPTCHIEN_API_BASE ?? "").replace(/\/$/, "");
+  const response = await fetch(`${base}${path}`, {
     method: body === undefined ? "GET" : "POST",
     headers: body === undefined ? {} : { "content-type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body)
+    body: body === undefined ? undefined : JSON.stringify(body),
+    credentials: "include"
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error ?? data.message ?? "Request failed");
+  if (!response.ok) {
+    const error = new Error(data.error ?? data.message ?? "Request failed");
+    error.status = response.status;
+    throw error;
+  }
   return data;
+}
+
+function renderAccount() {
+  const name = $("#account-name");
+  const label = $("#runtime-label");
+  const panel = $("#auth-panel");
+  if (name) name.textContent = state.account?.displayName ?? (state.hosted ? "Guest" : "Local");
+  if (label) label.textContent = state.hosted ? "M3 / HOSTED DEMO" : "M2 / LOCAL SANDBOX";
+  if (panel) panel.hidden = !state.hosted || Boolean(state.account);
 }
 
 function makeBlankBot() {
@@ -115,6 +134,8 @@ function refreshNextId() {
 
 function setBot(bot, strategyName = state.strategyName) {
   state.bot = clone(bot);
+  state.remoteBotId = null;
+  state.remoteRevision = 0;
   delete state.bot.matchSeed;
   if (!state.bot.brain) state.bot.brain = clone(state.examples.spear?.brain);
   state.strategyName = strategyName;
@@ -569,6 +590,18 @@ async function simulateCurrent() {
 
 async function saveVersion() {
   if (!(await validateCurrent())) return;
+  if (state.hosted) {
+    try {
+      const remote = state.remoteBotId
+        ? await api(`/api/v1/bots/${encodeURIComponent(state.remoteBotId)}/edit`, { revision: state.remoteRevision, bot: state.bot })
+        : await api("/api/v1/bots", { bot: state.bot });
+      state.remoteBotId = remote.botId;
+      state.remoteRevision = remote.revision;
+    } catch (error) {
+      showToast(error.message, "bad");
+      return;
+    }
+  }
   const version = {
     id: `v${String(state.versions.length + 1).padStart(2, "0")}`,
     bot: clone(state.bot),
@@ -589,6 +622,24 @@ async function submitCurrent() {
   if (!version) {
     await saveVersion();
     version = state.versions[0];
+  }
+  if (state.hosted) {
+    if (!state.remoteBotId) {
+      showToast("Sign in and save this version first.", "bad");
+      return;
+    }
+    try {
+      const result = await api(`/api/v1/bots/${encodeURIComponent(state.remoteBotId)}/submit`, { revision: state.remoteRevision });
+      state.queue = { versionId: version.id, status: result.status, matchId: result.matchId ?? null, createdAt: new Date().toISOString() };
+      version.submitted = true;
+      saveStorage(STORAGE_KEYS.versions, state.versions);
+      renderForge();
+      renderVersions();
+      showToast(result.status === "matched" ? "Official match created." : `${version.id} entered the official FIFO queue.`);
+    } catch (error) {
+      showToast(error.message, "bad");
+    }
+    return;
   }
   state.queue = { versionId: version.id, status: "queued", createdAt: new Date().toISOString() };
   version.submitted = true;
@@ -661,6 +712,26 @@ function bindEvents() {
   $$(".speed-button").forEach((button) => button.addEventListener("click", () => { state.speed = Number(button.dataset.speed); $$(".speed-button").forEach((item) => item.classList.toggle("active", item === button)); }));
   $("#save-version-button").addEventListener("click", saveVersion);
   $("#submit-button").addEventListener("click", submitCurrent);
+  $("#login-button").addEventListener("click", async () => {
+    try {
+      const result = await api("/api/auth/login", { email: $("#auth-email").value, password: $("#auth-password").value });
+      state.account = result.user;
+      renderAccount();
+      showToast("Signed in to the hosted demo.");
+    } catch (error) {
+      showToast(error.message, "bad");
+    }
+  });
+  $("#register-button").addEventListener("click", async () => {
+    try {
+      const result = await api("/api/auth/register", { email: $("#auth-email").value, password: $("#auth-password").value, inviteCode: $("#auth-invite").value });
+      state.account = result.user;
+      renderAccount();
+      showToast("Account created and signed in.");
+    } catch (error) {
+      showToast(error.message, "bad");
+    }
+  });
   document.addEventListener("click", (event) => {
     const button = event.target.closest("[data-load-version]");
     if (!button) return;
@@ -675,6 +746,14 @@ function bindEvents() {
 
 async function boot() {
   try {
+    try {
+      const account = await api("/api/auth/me");
+      state.hosted = true;
+      state.account = account.user ?? null;
+    } catch (error) {
+      state.hosted = error.status === 401;
+    }
+    renderAccount();
     const [exampleData, ruleset] = await Promise.all([api("/api/examples"), api("/api/ruleset")]);
     state.examples = exampleData.examples;
     state.ruleset = ruleset;
@@ -686,6 +765,7 @@ async function boot() {
     $("#opponent-select").innerHTML = exampleData.names.filter((name) => name !== "spear").map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(titleCase(name))}</option>`).join("");
     $("#opponent-select").value = state.opponentName;
     bindEvents();
+    renderAccount();
     renderForge();
     renderBattle();
   } catch (error) {

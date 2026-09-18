@@ -1,6 +1,6 @@
 # PROMPT Chiến — kế hoạch xây dựng theo mô-đun
 
-Xây dựng theo [spec_demo.md](H:/AI/Prompt-battle/spec_demo.md), với bản đầu dành cho **nhóm thử nghiệm**, chạy trên VPS Linux của Khầy. Người chơi dùng **ChatGPT và Claude qua MCP** để thiết kế bot; Brain sử dụng bộ lệnh riêng của game. Demo lõi hoàn tất ở M3; khung xem trận trong chat triển khai tiếp ở M4.
+Xây dựng theo [spec_demo.md](H:/AI/Prompt-battle/spec_demo.md), với bản đầu dành cho **nhóm thử nghiệm**. M3 dùng Vercel cho web và Cloudflare Worker + D1 + Durable Object cho API/MCP/matchmaking; VPS vẫn là phương án triển khai riêng nếu cần. Người chơi dùng **ChatGPT và Claude qua MCP** để thiết kế bot; Brain sử dụng bộ lệnh riêng của game. Demo lõi hoàn tất ở M3; khung xem trận trong chat triển khai tiếp ở M4.
 
 ## 1. Kiến trúc và cách chia mô-đun
 
@@ -9,10 +9,10 @@ Dùng **một kho mã chung, các mô-đun có ranh giới rõ**, ban đầu tri
 Công nghệ chọn:
 
 - **TypeScript + pnpm workspace**, Node.js 22.23.1 đồng nhất giữa máy phát triển và server.
-- **React + Vite + Canvas 2D** cho web, editor và viewer.
-- **Hono** cho Web API và điểm kết nối MCP.
-- **PostgreSQL** lưu tài khoản, bot, phiên bản, hàng chờ và kết quả.
-- **MCP TypeScript SDK v2**, dùng `@modelcontextprotocol/server`; đây là dòng SDK chính thức hỗ trợ MCP 2026-07-28. [Nguồn SDK](https://github.com/modelcontextprotocol/typescript-sdk)
+- **HTML module + Canvas 2D** cho web, editor và viewer; `packages/ui` giữ helper dùng chung.
+- **Cloudflare Worker** cho Web API và điểm kết nối MCP; **D1** lưu dữ liệu và **Durable Object** điều phối FIFO.
+- **Vercel** phục vụ web tĩnh; API base được cấu hình bằng `PROMPTCHIEN_API_BASE` lúc build.
+- **MCP Streamable HTTP + OAuth 2.1 S256 PKCE**; M3 dùng adapter mỏng để giữ package lõi không phụ thuộc nền tảng.
 
 | Mô-đun | Trách nhiệm |
 |---|---|
@@ -159,7 +159,7 @@ Công việc dài trả ID và trạng thái `queued/running/completed/failed`. 
 - Kiểm chứng đăng nhập thực tế trên cả ChatGPT và Claude. [OpenAI Authentication](https://developers.openai.com/apps-sdk/build/auth), [Claude Authentication](https://claude.com/docs/connectors/building/authentication)
 - M4 dùng `@modelcontextprotocol/ext-apps` v2, tái sử dụng Viewer để mở replay ngay trong chat. Host không hỗ trợ UI vẫn nhận kết quả và link web. [MCP Apps trong ChatGPT](https://developers.openai.com/apps-sdk/build/chatgpt-ui)
 
-## 4. Triển khai trên tên miền của Khầy
+## 4. Triển khai hosted M3
 
 Địa chỉ dự kiến:
 
@@ -169,11 +169,13 @@ Công việc dài trả ID và trạng thái `queued/running/completed/failed`. 
 - Trang xem lại: `/replays/{replay_id}`.
 - Đăng nhập và OAuth dùng cùng tên miền con.
 
-Triển khai bằng **Docker Compose gồm Caddy, ứng dụng và PostgreSQL**. Backend quản lý nhóm tiến trình chạy trận, ban đầu tối đa hai job đồng thời; hàng chờ lưu trong database.
+M3 hiện triển khai web tĩnh bằng **Vercel** và API bằng **Cloudflare Worker**. D1 lưu tài khoản, bot, version, submission, OAuth và replay; Durable Object giữ hàng chờ FIFO.
+
+- Public registration bị khóa nếu không đặt secret `INVITE_CODE`; `WEB_ORIGIN` giới hạn CORS. Local Worker dùng D1 local của Wrangler để smoke test trước khi deploy.
 
 - Thêm DNS `play` tại Cloudflare, trỏ về VPS; cấu hình HTTPS và Cloudflare Full (strict).
 - API, OAuth và MCP không cache; proxy giữ nguyên header và luồng SSE.
-- Package và kết quả lưu trong PostgreSQL; replay nén lưu ở volume bền vững.
+- Package và kết quả lưu trong D1 dưới dạng JSON có giới hạn body 4 MiB; replay hiện lưu JSON để demo, nén/object storage là bước tối ưu sau khi đo dung lượng.
 - Giới hạn khởi đầu: 20 tài khoản thử nghiệm, một simulation đang chạy/người, tối đa 10 yêu cầu simulation/phút/người.
 - Theo dõi lỗi, thời gian tick, hàng chờ, CPU/RAM và dung lượng replay. Có lệnh sao lưu/khôi phục và quay lại bản triển khai trước.
 
@@ -188,7 +190,7 @@ Triển khai bằng **Docker Compose gồm Caddy, ứng dụng và PostgreSQL**.
 | **M0 — Nền móng** | Workspace, ranh giới mô-đun, schema, ruleset ban đầu, bộ lệnh Brain, lệnh kiểm tra | Schema đọc được, ví dụ hợp lệ, kiểm tra phụ thuộc mô-đun đạt |
 | **M1 — Hai bot tự đánh** | Geometry, Brain, engine, phá hủy, replay dữ liệu, CLI và 5 bot mẫu trong spec | Hai bot đánh hết trận; chạy lại cùng kết quả; Windows/Linux cho cùng hash với 100 seed cố định |
 | **M2 — Local web lab** | Editor, Inspector, Viewer, replay controls, lưu version và hàng FIFO local | Người không biết code tạo bot, validate, simulate, chỉnh sửa, submit và xem replay hoàn chỉnh trên browser local |
-| **M3 — Demo dùng AI** | Account/auth, database, matchmaking chính thức, tám MCP tools, OAuth, tài liệu agent, triển khai VPS | ChatGPT và Claude đều thực hiện được tạo → validate → thử → sửa → submit; tải thử đạt trước khi mời người dùng |
+| **M3 — Demo dùng AI** | Account/auth, D1 database, Durable Object matchmaking, tám MCP tools, OAuth, tài liệu agent, Vercel + Cloudflare deployment | ChatGPT và Claude đều thực hiện được tạo → validate → thử → sửa → submit; tải thử đạt trước khi mời người dùng |
 | **M4 — Replay trong chat** | Viewer dùng chung qua MCP Apps | Render thật trên host hỗ trợ; play/pause/seek hoạt động; fallback link hoạt động trên client chỉ có tools |
 
 M2 cố ý là web lab local-first: draft, version và queue dùng `localStorage`, còn account, database, auth và matchmaking chính thức là phạm vi M3. Gate M2 không coi các năng lực hosted đó là đã hoàn tất.

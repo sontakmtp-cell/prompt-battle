@@ -7,8 +7,9 @@
     "node": ">=22.23.1 <23"
   },
   "scripts": {
-    "check": "node tools/check.mjs && node --check tools/web-server.mjs && node --check apps/web/app.js && node --test packages/core/src/self-test.ts && node --test packages/ui/src/battle-viewer.test.mjs",
+    "check": "node tools/check.mjs && node --check tools/web-server.mjs && node --check tools/vercel-build.mjs && node --check tools/m3-load.mjs && node --check apps/web/app.js && node --check apps/api/src/index.mjs && node --check apps/api/src/catalog.mjs && node --check apps/api/src/match-queue.mjs && node --check apps/api/src/m3-contract.mjs && node --test packages/core/src/self-test.ts && node --test packages/ui/src/battle-viewer.test.mjs && node --test apps/api/src/m3.test.mjs",
     "promptchien": "node packages/core/src/cli.ts",
-    "web": "node tools/web-server.mjs"
+    "web": "node tools/web-server.mjs",
+    "m3:load": "node tools/m3-load.mjs"
   }
 }

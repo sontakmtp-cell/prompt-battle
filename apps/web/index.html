@@ -17,8 +17,14 @@
             <div class="brand-subtitle">GEOMETRIC BOT BATTLE LAB</div>
           </div>
         </div>
-        <div class="topbar-center"><span class="pulse-dot"></span> M2 / LOCAL SANDBOX</div>
-        <div class="account-chip"><span class="account-avatar">K</span><span>Khầy</span><span class="account-caret">⌄</span></div>
+        <div class="topbar-center"><span class="pulse-dot"></span><span id="runtime-label">M2 / LOCAL SANDBOX</span></div>
+        <div class="account-chip"><span class="account-avatar">K</span><span id="account-name">Khầy</span><span class="account-caret">⌄</span></div>
+        <div class="auth-panel" id="auth-panel" hidden>
+          <input id="auth-email" type="email" placeholder="email" autocomplete="email" />
+          <input id="auth-password" type="password" placeholder="password (8+ ký tự)" autocomplete="current-password" />
+          <input id="auth-invite" type="text" placeholder="invite code (đăng ký)" />
+          <div><button class="button button-small" id="login-button" type="button">Sign in</button><button class="button button-small button-accent" id="register-button" type="button">Create</button></div>
+        </div>
       </header>
 
       <div class="workspace-shell">
@@ -161,6 +167,7 @@
       </div>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/runtime-config.js"></script>
     <script type="module" src="/app.js"></script>
   </body>
 </html>
