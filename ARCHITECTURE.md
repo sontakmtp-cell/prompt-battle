@@ -16,4 +16,4 @@ Quy tắc cứng:
 - Adapter/Application sẽ được thêm sau M1 và gọi vào `core`; chưa tạo code giả cho chúng.
 - Mọi version hợp đồng, ruleset, engine và Brain API là chuỗi độc lập.
 
-M1 dùng số nguyên cố định cho vị trí, hướng 64 bước và sát thương; `Math.random()`, đồng hồ hệ thống và `localeCompare()` không nằm trong đường mô phỏng. Replay hash loại các ID vận hành và thời gian ngoài trận, nên cùng bot + ruleset + seed có thể đối chiếu lại.
+M1 dùng số nguyên cố định cho vị trí, hướng 64 bước và sát thương; `Math.random()`, đồng hồ hệ thống và `localeCompare()` không nằm trong đường mô phỏng. Replay hash loại các ID vận hành và thời gian ngoài trận, nên cùng bot + ruleset + seed có thể đối chiếu lại. `verifyReplay()` yêu cầu replay được sinh lại từ hai bot đầu vào; hash tự tính lại một mình chỉ là kiểm tra integrity, không phải xác thực replay.

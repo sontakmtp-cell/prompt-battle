@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { open, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { simulateMatch } from "./battle.ts";
@@ -6,9 +6,23 @@ import { verifyReplay } from "./replay.ts";
 import { validateBot } from "./validation.ts";
 
 const rulesetPath = fileURLToPath(new URL("../rulesets/v0.1.json", import.meta.url));
+export const MAX_JSON_BYTES = 4 * 1024 * 1024;
 
-async function readJson(filePath: string): Promise<any> {
-  return JSON.parse(await readFile(path.resolve(process.cwd(), filePath), "utf8"));
+export async function readJson(filePath: string): Promise<any> {
+  const handle = await open(path.resolve(process.cwd(), filePath), "r");
+  try {
+    const buffer = Buffer.alloc(MAX_JSON_BYTES + 1);
+    let offset = 0;
+    while (offset < buffer.length) {
+      const { bytesRead } = await handle.read(buffer, offset, buffer.length - offset, null);
+      offset += bytesRead;
+      if (bytesRead === 0) break;
+    }
+    if (offset > MAX_JSON_BYTES) throw new Error(`JSON input exceeds ${MAX_JSON_BYTES} bytes`);
+    return JSON.parse(buffer.subarray(0, offset).toString("utf8"));
+  } finally {
+    await handle.close();
+  }
 }
 
 async function loadRuleset(): Promise<any> {
@@ -26,7 +40,7 @@ function usage(): void {
 Commands:
   pnpm promptchien -- validate <bot.json>
   pnpm promptchien -- simulate <bot-a.json> <bot-b.json> --seed 1234 [--out replay.json]
-  pnpm promptchien -- replay <replay.json>
+  pnpm promptchien -- replay <replay.json> --bot-a <bot-a.json> --bot-b <bot-b.json>
 `);
 }
 
@@ -66,10 +80,31 @@ async function simulateCommand(args: string[]): Promise<void> {
   }, null, 2));
 }
 
-async function replayCommand(filePath: string): Promise<void> {
+function replayMaxTicks(replay: any, ruleset: any): number {
+  const matchEnd = Array.isArray(replay.events) ? replay.events.filter((event: any) => event?.kind === "matchEnd").at(-1) : undefined;
+  const maxTicks = Number(matchEnd?.tick) + 1;
+  if (!Number.isSafeInteger(maxTicks) || maxTicks <= 0 || maxTicks > ruleset.match.maxTicks) {
+    throw new Error("replay must contain a bounded matchEnd event");
+  }
+  return maxTicks;
+}
+
+async function replayCommand(filePath: string, args: string[]): Promise<void> {
   if (!filePath) throw new Error("replay requires a replay JSON path");
+  const botAPath = valueAfter(args, "--bot-a");
+  const botBPath = valueAfter(args, "--bot-b");
+  if (!botAPath || !botBPath) throw new Error("replay requires --bot-a and --bot-b for deterministic verification");
   const replay = await readJson(filePath);
-  const valid = verifyReplay(replay);
+  const ruleset = await loadRuleset();
+  const botA = await readJson(botAPath);
+  const botB = await readJson(botBPath);
+  const botAReport = validateBot(botA, ruleset);
+  const botBReport = validateBot(botB, ruleset);
+  if (!botAReport.valid || !botBReport.valid) throw new Error("replay bot inputs must pass validation");
+  const seed = replay?.manifest?.seed;
+  if (!Number.isSafeInteger(seed) || seed < 0) throw new Error("replay seed must be a non-negative safe integer");
+  const regeneratedReplay = simulateMatch(botA, botB, ruleset, seed, replayMaxTicks(replay, ruleset)).replay;
+  const valid = verifyReplay(replay, regeneratedReplay);
   console.log(JSON.stringify({ valid, ...replay.manifest.result, replayHash: replay.manifest.replayHash }, null, 2));
   if (!valid) process.exitCode = 1;
 }
@@ -79,11 +114,13 @@ async function main(): Promise<void> {
   if (!command || command === "help" || command === "--help") return usage();
   if (command === "validate") return validateCommand(args[0]);
   if (command === "simulate") return simulateCommand(args);
-  if (command === "replay") return replayCommand(args[0]);
+  if (command === "replay") return replayCommand(args[0], args);
   throw new Error(`unknown command: ${command}`);
 }
 
-main().catch((error) => {
-  console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
-});
+if (path.resolve(process.argv[1] ?? "") === path.resolve(fileURLToPath(import.meta.url))) {
+  main().catch((error) => {
+    console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  });
+}

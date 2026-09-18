@@ -57,6 +57,11 @@ export function addReplayHash(replay: Omit<ReplayDocument, "manifest"> & { manif
   return replayWithHash;
 }
 
-export function verifyReplay(replay: ReplayDocument): boolean {
+export function verifyReplayHash(replay: ReplayDocument): boolean {
   return replay.manifest.replayHash === sha256(replayPayload(replay));
+}
+
+export function verifyReplay(replay: ReplayDocument, regeneratedReplay?: ReplayDocument): boolean {
+  if (!regeneratedReplay || !verifyReplayHash(replay) || !verifyReplayHash(regeneratedReplay)) return false;
+  return stableStringify(replayPayload(replay)) === stableStringify(replayPayload(regeneratedReplay));
 }
