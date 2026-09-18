@@ -1,19 +1,22 @@
-# Ranh giới mô-đun M0
+# Ranh giới mô-đun M2
 
-M1 giữ hợp đồng dữ liệu của M0 và thêm lõi mô phỏng offline. Web, database và MCP vẫn chưa được tạo.
+M2 giữ hợp đồng dữ liệu của M0/M1 và thêm web lab local-first. Database, auth, official matchmaking và MCP vẫn để dành cho M3.
 
 | Package | Sở hữu | Được phụ thuộc |
 |---|---|---|
 | `@promptchien/contracts` | JSON Schema, kiểu dữ liệu công khai, lệnh Brain, version | Không package nào |
 | `@promptchien/core` | Ruleset, Geometry Validator, Brain DSL, fixed-tick Battle Engine và Replay | `contracts` |
-| `@promptchien/ui` | Ranh giới cho Viewer/Editor sau này; chỉ đọc dữ liệu công khai | `contracts` |
+| `@promptchien/ui` | Ranh giới dữ liệu công khai cho Viewer/Editor | `contracts` |
+| `apps/web` + `tools/web-server.mjs` | Bot Forge, Inspector, local versions/queue, Battle Viewer và API adapter gọi core | `core`, `contracts`; trình duyệt không sở hữu luật trận |
 
 Quy tắc cứng:
 
 - `core` không được gọi database, mạng, filesystem hay UI.
 - `ui` không được tự tính sát thương, thắng thua hoặc sửa ruleset.
 - CLI gọi trực tiếp `core` và không có quyền truy cập database/mạng.
-- Adapter/Application sẽ được thêm sau M1 và gọi vào `core`; chưa tạo code giả cho chúng.
+- `tools/web-server.mjs` là adapter local mỏng: đọc request, gọi `core`, trả kết quả; không nhân bản damage hoặc thắng thua.
+- `apps/web` dùng DOM cho form/HUD và Canvas 2D cho geometry/arena; renderer không phải nguồn sự thật.
+- Draft/version/queue của M2 nằm trong `localStorage`; auth, database, SSE và official matchmaking chỉ thêm khi M3 có backend.
 - Mọi version hợp đồng, ruleset, engine và Brain API là chuỗi độc lập.
 
 M1 dùng số nguyên cố định cho vị trí, hướng 64 bước và sát thương; `Math.random()`, đồng hồ hệ thống và `localeCompare()` không nằm trong đường mô phỏng. Replay hash loại các ID vận hành và thời gian ngoài trận, nên cùng bot + ruleset + seed có thể đối chiếu lại. `verifyReplay()` yêu cầu replay được sinh lại từ hai bot đầu vào; hash tự tính lại một mình chỉ là kiểm tra integrity, không phải xác thực replay.

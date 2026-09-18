@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d1117" />
+    <title>PROMPT Chiến // Battle Lab</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">P</div>
+          <div>
+            <div class="brand-name">PROMPT CHIẾN</div>
+            <div class="brand-subtitle">GEOMETRIC BOT BATTLE LAB</div>
+          </div>
+        </div>
+        <div class="topbar-center"><span class="pulse-dot"></span> M2 / LOCAL SANDBOX</div>
+        <div class="account-chip"><span class="account-avatar">K</span><span>Khầy</span><span class="account-caret">⌄</span></div>
+      </header>
+
+      <div class="workspace-shell">
+        <aside class="sidebar">
+          <div class="sidebar-label">WORKSPACE</div>
+          <button class="nav-item active" data-view-target="forge-view" type="button">
+            <span class="nav-icon">✦</span><span>Bot Forge</span><span class="nav-count">01</span>
+          </button>
+          <button class="nav-item" data-view-target="battle-view" type="button">
+            <span class="nav-icon">◈</span><span>Battle Viewer</span><span class="nav-count" id="battle-nav-count">—</span>
+          </button>
+          <button class="nav-item" data-view-target="versions-view" type="button">
+            <span class="nav-icon">◷</span><span>Versions</span><span class="nav-count" id="version-nav-count">00</span>
+          </button>
+
+          <div class="sidebar-spacer"></div>
+          <div class="queue-card">
+            <div class="queue-card-top"><span class="mini-label">MATCH QUEUE</span><span class="queue-status-dot"></span></div>
+            <div class="queue-title" id="queue-title">No submission yet</div>
+            <div class="queue-meta" id="queue-meta">Save a version, then submit it to the local queue.</div>
+          </div>
+          <div class="sidebar-footnote">CORE ENGINE <strong>0.1</strong><br />RULESET <strong>0.1</strong></div>
+        </aside>
+
+        <main class="main-content">
+          <section class="view active" id="forge-view">
+            <div class="section-heading">
+              <div>
+                <div class="eyebrow">01 / BOT FORGE</div>
+                <h1>Build a body<br /><em>with a point of view.</em></h1>
+                <p class="section-lede">Shape the geometry, choose the brain, then let the fixed-tick engine decide the rest.</p>
+              </div>
+              <div class="heading-actions">
+                <span class="saved-indicator" id="saved-indicator"><span class="saved-dot"></span> LOCAL DRAFT</span>
+                <button class="button button-quiet" id="new-bot-button" type="button">＋ New draft</button>
+              </div>
+            </div>
+
+            <div class="forge-grid">
+              <div class="forge-main-column">
+                <article class="panel editor-panel">
+                  <div class="panel-heading">
+                    <div><div class="eyebrow">BODY / GEOMETRY</div><h2>Triangle field</h2></div>
+                    <div class="panel-kicker" id="grid-kicker">TRI-V1 GRID</div>
+                  </div>
+                  <div class="identity-row">
+                    <label class="field field-wide"><span>Bot name</span><input id="bot-name" maxlength="40" value="Spear" /></label>
+                    <label class="field"><span>Match seed</span><input id="match-seed" inputmode="numeric" type="number" min="0" value="1234" /></label>
+                  </div>
+                  <div class="canvas-frame geometry-frame">
+                    <canvas id="geometry-canvas" width="760" height="470" aria-label="Triangle geometry editor"></canvas>
+                    <div class="canvas-corner-label">CLICK TO PLACE / SELECT</div>
+                    <div class="canvas-coordinates" id="canvas-coordinates">x 00 / y 00</div>
+                  </div>
+                  <div class="editor-toolbar">
+                    <label class="compact-field"><span>TYPE</span><select id="triangle-type">
+                      <option value="hammer">BÚA / HAMMER</option><option value="scissor">KÉO / SCISSOR</option><option value="paper">BAO / PAPER</option><option value="motor">MOTOR</option>
+                    </select></label>
+                    <label class="compact-field"><span>ORIENTATION</span><select id="triangle-orientation"><option value="up">UP</option><option value="down">DOWN</option></select></label>
+                    <button class="button button-small" id="set-core-button" type="button">◎ Set core</button>
+                    <button class="button button-small button-danger-ghost" id="delete-triangle-button" type="button">× Delete</button>
+                  </div>
+                  <div class="geometry-legend">
+                    <span><i class="legend-swatch hammer"></i>Hammer <b id="legend-hammer">0</b></span>
+                    <span><i class="legend-swatch scissor"></i>Scissor <b id="legend-scissor">0</b></span>
+                    <span><i class="legend-swatch paper"></i>Paper <b id="legend-paper">0</b></span>
+                    <span><i class="legend-swatch motor"></i>Motor <b id="legend-motor">0</b></span>
+                  </div>
+                </article>
+
+                <article class="panel strategy-panel">
+                  <div class="panel-heading compact-heading">
+                    <div><div class="eyebrow">BRAIN / STRATEGY</div><h2>Give it a temperament</h2></div>
+                    <span class="version-pill">promptchien-brain-v1</span>
+                  </div>
+                  <div class="strategy-row">
+                    <label class="field field-wide"><span>Strategy preset</span><select id="strategy-preset"></select></label>
+                    <button class="button button-accent" id="apply-strategy-button" type="button">Apply brain</button>
+                  </div>
+                  <div class="strategy-readout" id="strategy-readout"></div>
+                </article>
+              </div>
+
+              <aside class="forge-side-column">
+                <article class="panel inspector-panel">
+                  <div class="panel-heading compact-heading"><div><div class="eyebrow">INSPECTOR</div><h2>Read the machine</h2></div><span class="status-badge neutral" id="validation-badge">NOT CHECKED</span></div>
+                  <div class="metric-grid" id="metric-grid"></div>
+                  <div class="core-readout" id="core-readout"></div>
+                  <div class="validation-output" id="validation-output"><div class="empty-state"><span class="empty-glyph">⌁</span><strong>Nothing validated yet</strong><span>Click validate when the shape feels right.</span></div></div>
+                  <div class="action-stack">
+                    <button class="button button-primary" id="validate-button" type="button">Validate bot <span>↗</span></button>
+                    <button class="button button-secondary" id="simulate-button" type="button">Simulate vs <strong id="opponent-button-label">Shield</strong> <span>→</span></button>
+                    <label class="field opponent-field"><span>Opponent blueprint</span><select id="opponent-select"></select></label>
+                  </div>
+                </article>
+
+                <article class="panel version-mini-panel">
+                  <div class="panel-heading compact-heading"><div><div class="eyebrow">LOCAL HISTORY</div><h2>Versions</h2></div><button class="text-button" data-view-target="versions-view" type="button">Open all →</button></div>
+                  <div id="mini-version-list" class="mini-version-list"></div>
+                </article>
+              </aside>
+            </div>
+          </section>
+
+          <section class="view" id="battle-view">
+            <div class="section-heading battle-heading">
+              <div><div class="eyebrow">02 / REPLAY LAB</div><h1>Watch the decision<br /><em>become impact.</em></h1><p class="section-lede">The viewer reads checkpoints and event logs from the fixed-tick engine. It never invents damage.</p></div>
+              <div class="heading-actions"><span class="result-badge" id="result-badge">NO REPLAY</span><button class="button button-quiet" id="back-to-forge-button" type="button">← Back to forge</button></div>
+            </div>
+            <div class="battle-layout">
+              <article class="panel arena-panel">
+                <div class="arena-scoreboard">
+                  <div class="score-team team-a"><div class="score-label"><span class="team-dot a"></span><span id="battle-name-a">YOUR BOT</span><b id="battle-core-a">CORE —</b></div><div class="health-track"><span id="health-a"></span></div></div>
+                  <div class="versus-mark">VS</div>
+                  <div class="score-team team-b"><div class="score-label"><span class="team-dot b"></span><span id="battle-name-b">OPPONENT</span><b id="battle-core-b">CORE —</b></div><div class="health-track"><span id="health-b"></span></div></div>
+                </div>
+                <div class="canvas-frame arena-frame"><canvas id="arena-canvas" width="920" height="530" aria-label="Battle replay viewer"></canvas><div class="arena-tick" id="arena-tick">TICK 0000</div><div class="arena-ring-key"><span></span> COLLAPSE RING</div></div>
+                <div class="replay-controls">
+                  <button class="control-button" id="play-button" type="button" aria-label="Play replay">▶</button>
+                  <button class="control-button" id="step-back-button" type="button" aria-label="Step back">↶</button>
+                  <button class="control-button" id="step-forward-button" type="button" aria-label="Step forward">↷</button>
+                  <div class="timeline-wrap"><input id="timeline" type="range" min="0" max="1" value="0" /><div class="timeline-labels"><span id="timeline-current">00:00</span><span id="timeline-total">00:00</span></div></div>
+                  <div class="speed-buttons" role="group" aria-label="Playback speed"><button class="speed-button active" data-speed="1" type="button">1×</button><button class="speed-button" data-speed="2" type="button">2×</button><button class="speed-button" data-speed="4" type="button">4×</button></div>
+                </div>
+              </article>
+              <aside class="battle-side-column">
+                <article class="panel replay-status-panel"><div class="eyebrow">MATCH READOUT</div><div class="match-result-line" id="match-result-line">Run a simulation to open the arena.</div><div class="match-stats" id="match-stats"></div></article>
+                <article class="panel event-panel"><div class="panel-heading compact-heading"><div><div class="eyebrow">EVENT STREAM</div><h2>What happened</h2></div><span class="event-count" id="event-count">0 events</span></div><div class="event-list" id="event-list"><div class="empty-state"><span class="empty-glyph">◌</span><strong>Awaiting a replay</strong><span>Simulate from Bot Forge.</span></div></div></article>
+              </aside>
+            </div>
+          </section>
+
+          <section class="view" id="versions-view">
+            <div class="section-heading"><div><div class="eyebrow">03 / VERSION VAULT</div><h1>Keep the good<br /><em>mistakes.</em></h1><p class="section-lede">Every local save is a restorable bot package. Submit only the version you have actually validated.</p></div><div class="heading-actions"><button class="button button-primary" id="save-version-button" type="button">＋ Save current version</button></div></div>
+            <div class="versions-layout"><article class="panel versions-panel"><div class="panel-heading"><div><div class="eyebrow">LOCAL REVISIONS</div><h2>Bot history</h2></div><span class="version-pill" id="version-total-pill">0 saved</span></div><div class="version-table-head"><span>VERSION</span><span>STATUS</span><span>UPDATED</span><span>ACTION</span></div><div id="version-list" class="version-list"></div></article><aside class="panel submit-panel"><div class="eyebrow">SUBMIT LANE</div><h2>Put a bot<br /><em>in the arena.</em></h2><p>Submit the current validated version to the local FIFO queue. M3 will connect this surface to auth and the server queue.</p><div class="submit-preview" id="submit-preview"></div><button class="button button-accent button-full" id="submit-button" type="button">Submit current version <span>↗</span></button></aside></div>
+          </section>
+
+          <footer class="app-footer"><span>DETERMINISTIC BY DEFAULT</span><span>CORE / UI BOUNDARY LOCKED</span><span>LOCAL STORAGE ONLY · M2</span></footer>
+        </main>
+      </div>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
