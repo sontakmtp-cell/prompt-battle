@@ -8,7 +8,7 @@
     "botBHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
     "seed": 1,
     "result": { "winner": "draw", "reason": "timeout" },
-    "replayHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "replayHash": "sha256:e732d6838dab76ced30d617a19a18efa7aec071954cb9daa25a30db3c87b0d43"
   },
   "events": [
     { "tick": 3600, "kind": "matchEnd", "data": { "winner": "draw", "reason": "timeout" } }

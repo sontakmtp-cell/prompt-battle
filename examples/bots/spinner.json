@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "promptchien.bot/0.1",
+  "metadata": { "name": "Spinner", "description": "Hình gần tròn, đủ ba loại, xoay nhanh để đổi mặt va chạm." },
+  "geometry": {
+    "grid": "tri-v1",
+    "triangles": [
+      { "id": "p-lu", "type": "paper", "x": -2, "y": 0, "orientation": "up" },
+      { "id": "p-ld", "type": "motor", "x": -2, "y": 0, "orientation": "down" },
+      { "id": "p-1u", "type": "scissor", "x": -1, "y": 0, "orientation": "up" },
+      { "id": "p-1d", "type": "hammer", "x": -1, "y": 0, "orientation": "down" },
+      { "id": "p-core", "type": "scissor", "x": 0, "y": 0, "orientation": "up" },
+      { "id": "p-0d", "type": "motor", "x": 0, "y": 0, "orientation": "down" },
+      { "id": "p-1ru", "type": "hammer", "x": 1, "y": 0, "orientation": "up" },
+      { "id": "p-1rd", "type": "paper", "x": 1, "y": 0, "orientation": "down" },
+      { "id": "p-2u", "type": "motor", "x": 2, "y": 0, "orientation": "up" },
+      { "id": "p-2d", "type": "scissor", "x": 2, "y": 0, "orientation": "down" },
+      { "id": "p-topu", "type": "paper", "x": 0, "y": 1, "orientation": "up" },
+      { "id": "p-topd", "type": "hammer", "x": 0, "y": 1, "orientation": "down" },
+      { "id": "p-botu", "type": "motor", "x": 0, "y": -1, "orientation": "up" },
+      { "id": "p-botd", "type": "scissor", "x": 0, "y": -1, "orientation": "down" }
+    ]
+  },
+  "core": { "triangleId": "p-core" },
+  "brain": {
+    "language": "promptchien-brain-v1",
+    "entry": "main",
+    "rules": [
+      {
+        "id": "spin-and-close",
+        "when": { "all": [{ "read": "SCAN_ENEMY", "op": "eq", "value": true }] },
+        "then": [
+          { "command": "MOVE", "direction": "toward_enemy", "power": 650 },
+          { "command": "ROTATE", "direction": "right", "power": 1000 }
+        ]
+      }
+    ],
+    "fallback": [
+      { "command": "MOVE", "direction": "forward", "power": 600 },
+      { "command": "ROTATE", "direction": "right", "power": 1000 }
+    ]
+  }
+}

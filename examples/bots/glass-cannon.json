@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "promptchien.bot/0.1",
+  "metadata": { "name": "Glass Cannon", "description": "Ít thân, Búa/Kéo dồn phía trước, ưu tiên đòn đầu." },
+  "geometry": {
+    "grid": "tri-v1",
+    "triangles": [
+      { "id": "g-f1u", "type": "hammer", "x": 2, "y": 0, "orientation": "up" },
+      { "id": "g-f1d", "type": "hammer", "x": 2, "y": 0, "orientation": "down" },
+      { "id": "g-f2u", "type": "hammer", "x": 1, "y": 0, "orientation": "up" },
+      { "id": "g-f2d", "type": "scissor", "x": 1, "y": 0, "orientation": "down" },
+      { "id": "g-core", "type": "hammer", "x": 0, "y": 0, "orientation": "up" },
+      { "id": "g-mid", "type": "scissor", "x": 0, "y": 0, "orientation": "down" },
+      { "id": "g-r1u", "type": "motor", "x": -1, "y": 0, "orientation": "up" },
+      { "id": "g-r1d", "type": "motor", "x": -1, "y": 0, "orientation": "down" },
+      { "id": "g-r2u", "type": "motor", "x": -2, "y": 0, "orientation": "up" },
+      { "id": "g-r2d", "type": "motor", "x": -2, "y": 0, "orientation": "down" },
+      { "id": "g-topu", "type": "hammer", "x": 0, "y": 1, "orientation": "up" },
+      { "id": "g-topd", "type": "scissor", "x": 0, "y": 1, "orientation": "down" }
+    ]
+  },
+  "core": { "triangleId": "g-core" },
+  "brain": {
+    "language": "promptchien-brain-v1",
+    "entry": "main",
+    "rules": [
+      {
+        "id": "all-in",
+        "when": { "all": [{ "read": "SCAN_ENEMY", "op": "eq", "value": true }] },
+        "then": [
+          { "command": "MOVE", "direction": "forward", "power": 1000 },
+          { "command": "ROTATE", "direction": "toward_enemy", "power": 1000 }
+        ]
+      }
+    ],
+    "fallback": [
+      { "command": "MOVE", "direction": "forward", "power": 1000 },
+      { "command": "ROTATE", "direction": "right", "power": 900 }
+    ]
+  }
+}

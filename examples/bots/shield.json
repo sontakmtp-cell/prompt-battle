@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "promptchien.bot/0.1",
+  "metadata": { "name": "Shield", "description": "Bao dày che lõi, Motor phía sau, thiên về sống sót." },
+  "geometry": {
+    "grid": "tri-v1",
+    "triangles": [
+      { "id": "h-f1u", "type": "paper", "x": 2, "y": 0, "orientation": "up" },
+      { "id": "h-f1d", "type": "paper", "x": 2, "y": 0, "orientation": "down" },
+      { "id": "h-f2u", "type": "paper", "x": 1, "y": 0, "orientation": "up" },
+      { "id": "h-f2d", "type": "paper", "x": 1, "y": 0, "orientation": "down" },
+      { "id": "h-core", "type": "paper", "x": 0, "y": 0, "orientation": "up" },
+      { "id": "h-mid", "type": "paper", "x": 0, "y": 0, "orientation": "down" },
+      { "id": "h-r1u", "type": "motor", "x": -1, "y": 0, "orientation": "up" },
+      { "id": "h-r1d", "type": "motor", "x": -1, "y": 0, "orientation": "down" },
+      { "id": "h-r2u", "type": "motor", "x": -2, "y": 0, "orientation": "up" },
+      { "id": "h-r2d", "type": "motor", "x": -2, "y": 0, "orientation": "down" },
+      { "id": "h-topu", "type": "scissor", "x": 0, "y": 1, "orientation": "up" },
+      { "id": "h-topd", "type": "paper", "x": 0, "y": 1, "orientation": "down" }
+    ]
+  },
+  "core": { "triangleId": "h-core" },
+  "brain": {
+    "language": "promptchien-brain-v1",
+    "entry": "main",
+    "rules": [
+      {
+        "id": "retreat-when-hurt",
+        "when": { "all": [
+          { "read": "SCAN_ENEMY", "op": "eq", "value": true },
+          { "read": "GET_SELF_STATUS", "op": "lt", "value": 300 }
+        ] },
+        "then": [
+          { "command": "MOVE", "direction": "away_from_enemy", "power": 600 },
+          { "command": "ROTATE", "direction": "toward_enemy", "power": 1000 }
+        ]
+      },
+      {
+        "id": "advance",
+        "when": { "all": [{ "read": "SCAN_ENEMY", "op": "eq", "value": true }] },
+        "then": [
+          { "command": "MOVE", "direction": "toward_enemy", "power": 500 },
+          { "command": "ROTATE", "direction": "toward_enemy", "power": 700 }
+        ]
+      }
+    ],
+    "fallback": [
+      { "command": "MOVE", "direction": "none", "power": 0 },
+      { "command": "ROTATE", "direction": "right", "power": 250 }
+    ]
+  }
+}

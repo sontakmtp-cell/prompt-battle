@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "promptchien.bot/0.1",
+  "metadata": { "name": "Spear", "description": "Búa dồn phía trước, Motor phía sau, lao trực diện." },
+  "geometry": {
+    "grid": "tri-v1",
+    "triangles": [
+      { "id": "s-f1u", "type": "hammer", "x": 2, "y": 0, "orientation": "up" },
+      { "id": "s-f1d", "type": "hammer", "x": 2, "y": 0, "orientation": "down" },
+      { "id": "s-f2u", "type": "hammer", "x": 1, "y": 0, "orientation": "up" },
+      { "id": "s-f2d", "type": "scissor", "x": 1, "y": 0, "orientation": "down" },
+      { "id": "s-core", "type": "hammer", "x": 0, "y": 0, "orientation": "up" },
+      { "id": "s-mid", "type": "paper", "x": 0, "y": 0, "orientation": "down" },
+      { "id": "s-r1u", "type": "motor", "x": -1, "y": 0, "orientation": "up" },
+      { "id": "s-r1d", "type": "motor", "x": -1, "y": 0, "orientation": "down" },
+      { "id": "s-r2u", "type": "motor", "x": -2, "y": 0, "orientation": "up" },
+      { "id": "s-r2d", "type": "motor", "x": -2, "y": 0, "orientation": "down" },
+      { "id": "s-topu", "type": "paper", "x": 0, "y": 1, "orientation": "up" },
+      { "id": "s-topd", "type": "paper", "x": 0, "y": 1, "orientation": "down" }
+    ]
+  },
+  "core": { "triangleId": "s-core" },
+  "brain": {
+    "language": "promptchien-brain-v1",
+    "entry": "main",
+    "rules": [
+      {
+        "id": "charge",
+        "when": { "all": [{ "read": "SCAN_ENEMY", "op": "eq", "value": true }] },
+        "then": [
+          { "command": "MOVE", "direction": "toward_enemy", "power": 1000 },
+          { "command": "ROTATE", "direction": "toward_enemy", "power": 1000 }
+        ]
+      }
+    ],
+    "fallback": [
+      { "command": "MOVE", "direction": "forward", "power": 800 },
+      { "command": "ROTATE", "direction": "right", "power": 350 }
+    ]
+  }
+}

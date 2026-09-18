@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "promptchien.bot/0.1",
+  "metadata": { "name": "Flanker", "description": "Kéo hai bên, Motor lệch hai cánh, luôn tìm góc sườn." },
+  "geometry": {
+    "grid": "tri-v1",
+    "triangles": [
+      { "id": "f-frontu", "type": "scissor", "x": 1, "y": 0, "orientation": "up" },
+      { "id": "f-frontd", "type": "scissor", "x": 1, "y": 0, "orientation": "down" },
+      { "id": "f-core", "type": "paper", "x": 0, "y": 0, "orientation": "up" },
+      { "id": "f-mid", "type": "hammer", "x": 0, "y": 0, "orientation": "down" },
+      { "id": "f-rearu", "type": "motor", "x": -1, "y": 0, "orientation": "up" },
+      { "id": "f-reard", "type": "motor", "x": -1, "y": 0, "orientation": "down" },
+      { "id": "f-tailu", "type": "motor", "x": -2, "y": 0, "orientation": "up" },
+      { "id": "f-taild", "type": "motor", "x": -2, "y": 0, "orientation": "down" },
+      { "id": "f-leftu", "type": "motor", "x": 0, "y": 1, "orientation": "up" },
+      { "id": "f-leftd", "type": "scissor", "x": 0, "y": 1, "orientation": "down" },
+      { "id": "f-rightu", "type": "scissor", "x": 0, "y": -1, "orientation": "up" },
+      { "id": "f-rightd", "type": "motor", "x": 0, "y": -1, "orientation": "down" },
+      { "id": "f-wingu", "type": "scissor", "x": 1, "y": 1, "orientation": "up" },
+      { "id": "f-wingd", "type": "scissor", "x": 1, "y": 1, "orientation": "down" }
+    ]
+  },
+  "core": { "triangleId": "f-core" },
+  "brain": {
+    "language": "promptchien-brain-v1",
+    "entry": "main",
+    "rules": [
+      {
+        "id": "arc-around",
+        "when": { "all": [{ "read": "SCAN_ENEMY", "op": "eq", "value": true }] },
+        "then": [
+          { "command": "MOVE", "direction": "toward_enemy", "power": 850 },
+          { "command": "ROTATE", "direction": "right", "power": 650 }
+        ]
+      }
+    ],
+    "fallback": [
+      { "command": "MOVE", "direction": "forward", "power": 700 },
+      { "command": "ROTATE", "direction": "right", "power": 500 }
+    ]
+  }
+}

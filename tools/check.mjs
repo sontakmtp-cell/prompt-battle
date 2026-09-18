@@ -103,7 +103,7 @@ function assertBotSemantics(bot, ruleset) {
   const ids = triangles.map((triangle) => triangle.id);
   assert.equal(new Set(ids).size, ids.length, "triangle ids must be unique");
 
-  const coordinates = triangles.map((triangle) => `${triangle.x},${triangle.y}`);
+  const coordinates = triangles.map((triangle) => `${triangle.x},${triangle.y},${triangle.orientation}`);
   assert.equal(new Set(coordinates).size, coordinates.length, "triangle grid cells must be unique");
 
   const coreTriangle = triangles.find((triangle) => triangle.id === bot.core.triangleId);
@@ -213,6 +213,12 @@ assert.deepEqual(actionCommands, commands.actions, "Brain action commands drifte
 validate(bot, botSchema);
 assertBotSemantics(bot, ruleset);
 validate(replay, replaySchema);
+
+for (const referenceName of ["spear", "shield", "flanker", "spinner", "glass-cannon"]) {
+  const referenceBot = await readJson(`examples/bots/${referenceName}.json`);
+  validate(referenceBot, botSchema);
+  assertBotSemantics(referenceBot, ruleset);
+}
 
 const invalidCoreBot = structuredClone(bot);
 invalidCoreBot.geometry.triangles[0].type = "motor";
