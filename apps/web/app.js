@@ -1,3 +1,6 @@
+import { escapeHtml, replayFrameAt, trianglePointAngle } from "/ui/battle-viewer.js";
+import { addTriangle, removeTriangle } from "/ui/editor-actions.js";
+
 const STORAGE_KEYS = {
   draft: "promptchien:m2:draft",
   versions: "promptchien:m2:versions",
@@ -22,7 +25,8 @@ const state = {
   playTimer: null,
   selectedTriangleId: null,
   nextTriangleId: 1,
-  pointerCell: null
+  pointerCell: null,
+  damageMapVisible: false
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -241,12 +245,13 @@ function handleCanvasPointer(event) {
   if (existing) {
     state.selectedTriangleId = existing.id;
   } else {
-    if (state.bot.geometry.triangles.length >= (state.ruleset?.geometry?.maxTriangles ?? 60)) {
+    const maxTriangles = state.ruleset?.geometry?.maxTriangles ?? 60;
+    if (state.bot.geometry.triangles.length >= maxTriangles) {
       showToast("Geometry budget reached.", "bad");
       return;
     }
     const triangle = { id: nextId(), type: $("#triangle-type").value, x: cell.x, y: cell.y, orientation: cell.orientation };
-    state.bot.geometry.triangles.push(triangle);
+    addTriangle(state.bot.geometry, triangle, maxTriangles);
     state.selectedTriangleId = triangle.id;
     state.validation = null;
     saveStorage(STORAGE_KEYS.draft, state.bot);
@@ -269,16 +274,16 @@ function editSelected(callback) {
 function renderMetrics() {
   const metrics = state.validation?.geometry ?? geometryMetrics();
   const items = [
-    ["TRIANGLES", `${metrics.triangleCount ?? metrics.triangles ?? 0} <small>/ 60</small>`],
-    ["COMBAT", metrics.combatTriangleCount ?? metrics.combatTriangles ?? 0],
-    ["MOTORS", metrics.motorCount ?? metrics.motorTriangles ?? 0],
-    ["GRID SPAN", `${metrics.width ?? 0} × ${metrics.height ?? 0}`],
-    ["LOAD FACTOR", metrics.initialLoadFactor === null || metrics.initialLoadFactor === undefined ? "∞" : metrics.initialLoadFactor],
-    ["CORE TYPE", typeLabel(metrics.coreType ?? "missing")]
+    ["TRIANGLES", `${escapeHtml(metrics.triangleCount ?? metrics.triangles ?? 0)} <small>/ 60</small>`],
+    ["COMBAT", escapeHtml(metrics.combatTriangleCount ?? metrics.combatTriangles ?? 0)],
+    ["MOTORS", escapeHtml(metrics.motorCount ?? metrics.motorTriangles ?? 0)],
+    ["GRID SPAN", `${escapeHtml(metrics.width ?? 0)} × ${escapeHtml(metrics.height ?? 0)}`],
+    ["LOAD FACTOR", escapeHtml(metrics.initialLoadFactor === null || metrics.initialLoadFactor === undefined ? "∞" : metrics.initialLoadFactor)],
+    ["CORE TYPE", escapeHtml(typeLabel(metrics.coreType ?? "missing"))]
   ];
-  $("#metric-grid").innerHTML = items.map(([label, value]) => `<div class="metric"><div class="metric-label">${label}</div><div class="metric-value">${value}</div></div>`).join("");
+  $("#metric-grid").innerHTML = items.map(([label, value]) => `<div class="metric"><div class="metric-label">${escapeHtml(label)}</div><div class="metric-value">${value}</div></div>`).join("");
   const core = state.bot.geometry.triangles.find((triangle) => triangle.id === state.bot.core.triangleId);
-  $("#core-readout").innerHTML = core ? `<span>Core lock</span><strong>${core.id} · ${typeLabel(core.type).toUpperCase()}</strong>` : `<span>Core lock</span><strong>NOT SET</strong>`;
+  $("#core-readout").innerHTML = core ? `<span>Core lock</span><strong>${escapeHtml(core.id)} · ${escapeHtml(typeLabel(core.type).toUpperCase())}</strong>` : `<span>Core lock</span><strong>NOT SET</strong>`;
   for (const type of ["hammer", "scissor", "paper", "motor"]) $("#legend-" + type).textContent = state.bot.geometry.triangles.filter((triangle) => triangle.type === type).length;
 }
 
@@ -291,10 +296,10 @@ function renderValidation() {
     output.innerHTML = `<div class="empty-state"><span class="empty-glyph">⌁</span><strong>Nothing validated yet</strong><span>Click validate when the shape feels right.</span></div>`;
     return;
   }
-  const errors = (state.validation.errors ?? []).map((message) => `<li class="error">${message}</li>`).join("");
-  const warnings = (state.validation.warnings ?? []).map((message) => `<li class="warning">${message}</li>`).join("");
+  const errors = (state.validation.errors ?? []).map((message) => `<li class="error">${escapeHtml(message)}</li>`).join("");
+  const warnings = (state.validation.warnings ?? []).map((message) => `<li class="warning">${escapeHtml(message)}</li>`).join("");
   output.innerHTML = state.validation.valid
-    ? `<div class="report-ok">✓ Geometry and Brain pass the sandbox.<span class="report-hash">${state.validation.botHash ?? "hash unavailable"}</span></div>${warnings ? `<ul>${warnings}</ul>` : ""}`
+    ? `<div class="report-ok">✓ Geometry and Brain pass the sandbox.<span class="report-hash">${escapeHtml(state.validation.botHash ?? "hash unavailable")}</span></div>${warnings ? `<ul>${warnings}</ul>` : ""}`
     : `<ul>${errors}${warnings}</ul>`;
 }
 
@@ -311,7 +316,7 @@ function strategyDescription(name) {
 function renderStrategy() {
   const preset = $("#strategy-preset");
   if (preset.options.length && [...preset.options].some((option) => option.value === state.strategyName)) preset.value = state.strategyName;
-  $("#strategy-readout").innerHTML = `<strong>${titleCase(state.strategyName)}</strong> · ${strategyDescription(state.strategyName)}`;
+  $("#strategy-readout").innerHTML = `<strong>${escapeHtml(titleCase(state.strategyName))}</strong> · ${escapeHtml(strategyDescription(state.strategyName))}`;
 }
 
 function renderQueue() {
@@ -330,10 +335,10 @@ function renderVersions() {
   $("#version-nav-count").textContent = String(state.versions.length).padStart(2, "0");
   $("#version-total-pill").textContent = `${state.versions.length} saved`;
   const empty = `<div class="empty-state"><span class="empty-glyph">◷</span><strong>No saved versions</strong><span>Save a validated bot to start a history.</span></div>`;
-  const rows = state.versions.map((version, index) => `<div class="version-row"><div class="version-id">${version.id}<small>${version.bot?.metadata?.name ?? "Untitled"} · ${(version.botHash ?? "").slice(0, 18)}…</small></div><div class="version-state ${version.valid ? "valid" : ""}">${version.submitted ? "QUEUED" : version.valid ? "VALIDATED" : "DRAFT"}</div><div class="version-time">${new Date(version.savedAt).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</div><button class="version-action" data-load-version="${index}" type="button">Load</button></div>`).join("");
+  const rows = state.versions.map((version, index) => `<div class="version-row"><div class="version-id">${escapeHtml(version.id)}<small>${escapeHtml(version.bot?.metadata?.name ?? "Untitled")} · ${escapeHtml((version.botHash ?? "").slice(0, 18))}…</small></div><div class="version-state ${version.valid ? "valid" : ""}">${version.submitted ? "QUEUED" : version.valid ? "VALIDATED" : "DRAFT"}</div><div class="version-time">${escapeHtml(new Date(version.savedAt).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }))}</div><button class="version-action" data-load-version="${index}" type="button">Load</button></div>`).join("");
   $("#version-list").innerHTML = rows || empty;
-  $("#mini-version-list").innerHTML = state.versions.slice(0, 3).map((version, index) => `<div class="mini-version"><div><div class="mini-version-name">${version.bot?.metadata?.name ?? version.id}</div><div class="mini-version-meta">${version.id} · ${version.valid ? "validated" : "draft"}</div></div><button data-load-version="${index}" type="button">Load</button></div>`).join("") || `<div class="empty-state"><span class="empty-glyph">◷</span><strong>Nothing saved</strong><span>Versions appear here.</span></div>`;
-  const preview = state.validation?.valid ? `<strong>${state.bot.metadata.name}</strong><span>${state.validation.botHash ?? "validated local draft"}</span>` : `<strong>Validation required</strong><span>Validate the current bot before submitting.</span>`;
+  $("#mini-version-list").innerHTML = state.versions.slice(0, 3).map((version, index) => `<div class="mini-version"><div><div class="mini-version-name">${escapeHtml(version.bot?.metadata?.name ?? version.id)}</div><div class="mini-version-meta">${escapeHtml(version.id)} · ${version.valid ? "validated" : "draft"}</div></div><button data-load-version="${index}" type="button">Load</button></div>`).join("") || `<div class="empty-state"><span class="empty-glyph">◷</span><strong>Nothing saved</strong><span>Versions appear here.</span></div>`;
+  const preview = state.validation?.valid ? `<strong>${escapeHtml(state.bot.metadata.name)}</strong><span>${escapeHtml(state.validation.botHash ?? "validated local draft")}</span>` : `<strong>Validation required</strong><span>Validate the current bot before submitting.</span>`;
   $("#submit-preview").innerHTML = preview;
   renderQueue();
 }
@@ -353,25 +358,7 @@ function renderForge() {
 }
 
 function checkpointAt(tick) {
-  if (!state.replay?.checkpoints?.length) return null;
-  const checkpoints = state.replay.checkpoints;
-  let previous = checkpoints[0];
-  let next = checkpoints[checkpoints.length - 1];
-  for (let index = 0; index < checkpoints.length; index += 1) {
-    if (checkpoints[index].tick <= tick) previous = checkpoints[index];
-    if (checkpoints[index].tick >= tick) { next = checkpoints[index]; break; }
-  }
-  const range = Math.max(1, next.tick - previous.tick);
-  const amount = Math.max(0, Math.min(1, (tick - previous.tick) / range));
-  const bots = previous.state.bots.map((bot, index) => {
-    const target = next.state.bots[index] ?? bot;
-    return {
-      ...bot,
-      position: { x: Math.round(bot.position.x + (target.position.x - bot.position.x) * amount), y: Math.round(bot.position.y + (target.position.y - bot.position.y) * amount) },
-      angle: bot.angle + (target.angle - bot.angle) * amount
-    };
-  });
-  return { bots };
+  return replayFrameAt(state.replay, tick, state.battleBots);
 }
 
 function worldPoint(position, canvas) {
@@ -395,7 +382,7 @@ function drawArenaGrid(context, canvas) {
   context.beginPath(); context.moveTo(padding, canvas.height / 2); context.lineTo(canvas.width - padding, canvas.height / 2); context.stroke();
 }
 
-function drawArenaBot(context, canvas, definition, botState, team) {
+function drawArenaBot(context, canvas, definition, botState, team, highlightIds = new Set()) {
   if (!definition || !botState) return;
   const live = new Map((botState.triangles ?? []).map((triangle) => [triangle.id, triangle]));
   const origin = worldPoint(botState.position, canvas);
@@ -405,19 +392,30 @@ function drawArenaBot(context, canvas, definition, botState, team) {
   const colors = team === "A" ? { hammer: "#ee806e", scissor: "#f3bb68", paper: "#73c6d1", motor: "#a995e8" } : { hammer: "#e889a2", scissor: "#d4b1f5", paper: "#73bde2", motor: "#8b9fc4" };
   for (const triangle of definition.geometry.triangles) {
     const current = live.get(triangle.id);
-    if (!current) continue;
+    const highlighted = highlightIds.has(triangle.id);
+    if (!current && !highlighted) continue;
     const localX = triangle.x * 900 * origin.scale;
     const localY = triangle.y * 900 * origin.scale;
     const px = origin.x + localX * cos - localY * sin;
     const py = origin.y + localX * sin + localY * cos;
     const size = Math.max(7, 350 * origin.scale);
-    const pointAngle = angle + (triangle.orientation === "up" ? -Math.PI / 2 : Math.PI / 2);
+    const pointAngle = trianglePointAngle(botState.angle ?? 0, triangle.orientation);
     const polygon = [0, 1, 2].map((index) => {
       const theta = pointAngle + index * Math.PI * 2 / 3;
       return [px + Math.cos(theta) * size, py + Math.sin(theta) * size];
     });
-    const hpRatio = Math.max(0.22, Math.min(1, Number(current.hp ?? 0) / Math.max(1, Number(current.maxHp ?? 1))));
-    drawPolygon(context, polygon, `${colors[triangle.type] ?? "#81909b"}${Math.round(hpRatio * 220).toString(16).padStart(2, "0")}`, triangle.id === definition.core.triangleId ? "#fff1cc" : `${colors[triangle.type] ?? "#81909b"}d0`, triangle.id === definition.core.triangleId ? 2 : 1);
+    const hpRatio = current ? Math.max(0.22, Math.min(1, Number(current.hp ?? 0) / Math.max(1, Number(current.maxHp ?? 1)))) : 0.22;
+    const color = colors[triangle.type] ?? "#81909b";
+    drawPolygon(context, polygon, `${color}${Math.round(hpRatio * 220).toString(16).padStart(2, "0")}`, highlighted || triangle.id === definition.core.triangleId ? "#fff1cc" : `${color}d0`, highlighted || triangle.id === definition.core.triangleId ? 2.4 : 1);
+    if (highlighted) {
+      context.beginPath();
+      context.arc(px, py, size * 1.18, 0, Math.PI * 2);
+      context.setLineDash([3, 3]);
+      context.strokeStyle = team === "A" ? "#f6a64b" : "#75d8d2";
+      context.lineWidth = 1.5;
+      context.stroke();
+      context.setLineDash([]);
+    }
   }
   const core = live.get(definition.core.triangleId);
   if (core) {
@@ -443,8 +441,8 @@ function drawBattle() {
   }
   const arenaCenter = worldPoint({ x: 0, y: 0 }, canvas);
   context.beginPath(); context.arc(arenaCenter.x, arenaCenter.y, radius * arenaCenter.scale, 0, Math.PI * 2); context.setLineDash([7, 8]); context.strokeStyle = "rgba(237,119,114,.55)"; context.lineWidth = 1.3; context.stroke(); context.setLineDash([]);
-  drawArenaBot(context, canvas, state.battleBots.A, frame.bots[0], "A");
-  drawArenaBot(context, canvas, state.battleBots.B, frame.bots[1], "B");
+  drawArenaBot(context, canvas, state.battleBots.A, frame.bots[0], "A", frame.highlights.A);
+  drawArenaBot(context, canvas, state.battleBots.B, frame.bots[1], "B", frame.highlights.B);
 }
 
 function coreStats(definition, botState) {
@@ -454,14 +452,37 @@ function coreStats(definition, botState) {
 
 function eventText(event) {
   const data = event.data ?? {};
-  if (event.kind === "hit") return `<strong>${data.attacker ?? "impact"}</strong> hit ${data.defender ?? "a triangle"} for ${data.damage ?? "?"}`;
-  if (event.kind === "destroy") return `${data.team ?? "?"} lost <strong>${data.tri ?? "a triangle"}</strong>`;
-  if (event.kind === "motorLost") return `${data.team ?? "?"} lost ${data.count ?? "a"} motor${data.count === 1 ? "" : "s"}`;
-  if (event.kind === "coreHit") return `<strong>${data.team ?? "?"}</strong> core took a hit`;
-  if (event.kind === "coreDestroyed") return `<strong>${data.team ?? "?"}</strong> core destroyed`;
-  if (event.kind === "matchEnd") return `Match ended: <strong>${data.winner ?? "draw"}</strong> / ${data.reason ?? "timeout"}`;
-  if (event.kind === "overload") return `${data.team ?? "?"} entered overload`;
-  return `${event.kind} · ${data.team ?? "arena"}`;
+  if (event.kind === "hit") return `<strong>${escapeHtml(data.attacker ?? "impact")}</strong> hit ${escapeHtml(data.defender ?? "a triangle")} for ${escapeHtml(data.damage ?? "?")}`;
+  if (event.kind === "destroy") return `${escapeHtml(data.team ?? "?")} lost <strong>${escapeHtml(data.tri ?? "a triangle")}</strong>`;
+  if (event.kind === "motorLost") return `${escapeHtml(data.team ?? "?")} lost ${escapeHtml(data.count ?? "a")} motor${data.count === 1 ? "" : "s"}`;
+  if (event.kind === "coreHit") return `<strong>${escapeHtml(data.team ?? "?")}</strong> core took a hit`;
+  if (event.kind === "coreDestroyed") return `<strong>${escapeHtml(data.team ?? "?")}</strong> core destroyed`;
+  if (event.kind === "matchEnd") return `Match ended: <strong>${escapeHtml(data.winner ?? "draw")}</strong> / ${escapeHtml(data.reason ?? "timeout")}`;
+  if (event.kind === "overload") return `${escapeHtml(data.team ?? "?")} entered overload`;
+  return `${escapeHtml(event.kind)} · ${escapeHtml(data.team ?? "arena")}`;
+}
+
+function renderDamageMap(frame) {
+  const output = $("#damage-map");
+  const toggle = $("#damage-map-toggle");
+  toggle.checked = state.damageMapVisible;
+  if (!frame || !state.damageMapVisible) {
+    output.hidden = true;
+    output.innerHTML = "";
+    return;
+  }
+  const values = ["A", "B"].flatMap((team) => state.battleBots[team].geometry.triangles.map((triangle) => frame.damageMap?.[team]?.[triangle.id] ?? 0));
+  const maxDamage = Math.max(1, ...values);
+  output.hidden = false;
+  output.innerHTML = ["A", "B"].map((team) => {
+    const definition = state.battleBots[team];
+    const rows = definition.geometry.triangles.map((triangle) => {
+      const damage = frame.damageMap?.[team]?.[triangle.id] ?? 0;
+      const width = Math.round(damage * 100 / maxDamage);
+      return `<div class="damage-row"><span>${escapeHtml(triangle.id)}</span><div class="damage-track"><i style="width:${width}%"></i></div><b>${escapeHtml(damage)}</b></div>`;
+    }).join("");
+    return `<div class="damage-team"><div class="damage-team-title"><span class="team-dot ${team === "A" ? "a" : "b"}"></span>${escapeHtml(definition.metadata.name)}<small>${team}</small></div>${rows || `<span class="damage-empty">No triangles</span>`}</div>`;
+  }).join("");
 }
 
 function renderBattle() {
@@ -474,6 +495,7 @@ function renderBattle() {
     $("#match-stats").innerHTML = "";
     $("#event-count").textContent = "0 events";
     $("#event-list").innerHTML = `<div class="empty-state"><span class="empty-glyph">◌</span><strong>Awaiting a replay</strong><span>Simulate from Bot Forge.</span></div>`;
+    renderDamageMap(null);
     drawBattle();
     return;
   }
@@ -498,10 +520,11 @@ function renderBattle() {
   $("#result-badge").className = `result-badge ${result.winner === "draw" ? "" : "winner"}`;
   $("#match-result-line").textContent = winnerText;
   const finalBots = state.replay.checkpoints.at(-1)?.state?.bots ?? [];
-  $("#match-stats").innerHTML = `<div class="match-stat"><small>REASON</small><strong>${result.reason.toUpperCase()}</strong></div><div class="match-stat"><small>DURATION</small><strong>${formatDuration(state.replay.events.find((event) => event.kind === "matchEnd")?.tick ?? maxTick)}</strong></div><div class="match-stat"><small>DAMAGE A / B</small><strong>${finalBots[0]?.damageDealt ?? 0} / ${finalBots[1]?.damageDealt ?? 0}</strong></div><div class="match-stat"><small>SEED</small><strong>${state.replay.manifest.seed}</strong></div>`;
+  $("#match-stats").innerHTML = `<div class="match-stat"><small>REASON</small><strong>${escapeHtml(result.reason.toUpperCase())}</strong></div><div class="match-stat"><small>DURATION</small><strong>${escapeHtml(formatDuration(state.replay.events.find((event) => event.kind === "matchEnd")?.tick ?? maxTick))}</strong></div><div class="match-stat"><small>DAMAGE A / B</small><strong>${escapeHtml(`${finalBots[0]?.damageDealt ?? 0} / ${finalBots[1]?.damageDealt ?? 0}`)}</strong></div><div class="match-stat"><small>SEED</small><strong>${escapeHtml(state.replay.manifest.seed)}</strong></div>`;
   const visibleEvents = state.replay.events.filter((event) => event.tick <= state.currentTick).slice(-9).reverse();
   $("#event-count").textContent = `${state.replay.events.length} events`;
-  $("#event-list").innerHTML = visibleEvents.length ? visibleEvents.map((event) => `<div class="event-row ${event.kind}"><div class="event-tick">T${String(event.tick).padStart(4, "0")}</div><div class="event-copy">${eventText(event)}</div></div>`).join("") : `<div class="empty-state"><span class="empty-glyph">◌</span><strong>No events yet</strong><span>Advance the timeline.</span></div>`;
+  $("#event-list").innerHTML = visibleEvents.length ? visibleEvents.map((event) => `<div class="event-row ${escapeHtml(event.kind)}"><div class="event-tick">T${String(event.tick).padStart(4, "0")}</div><div class="event-copy">${eventText(event)}</div></div>`).join("") : `<div class="empty-state"><span class="empty-glyph">◌</span><strong>No events yet</strong><span>Advance the timeline.</span></div>`;
+  renderDamageMap(frame);
   drawBattle();
 }
 
@@ -622,7 +645,7 @@ function bindEvents() {
   $("#geometry-canvas").addEventListener("pointerdown", handleCanvasPointer);
   $("#triangle-type").addEventListener("change", (event) => applySelectedType(event.target.value));
   $("#triangle-orientation").addEventListener("change", (event) => applySelectedOrientation(event.target.value));
-  $("#delete-triangle-button").addEventListener("click", () => editSelected((triangle) => { state.bot.geometry.triangles = state.bot.geometry.triangles.filter((item) => item.id !== triangle.id); if (state.bot.core.triangleId === triangle.id) state.bot.core.triangleId = state.bot.geometry.triangles.find((item) => item.type !== "motor")?.id ?? ""; state.selectedTriangleId = null; }));
+  $("#delete-triangle-button").addEventListener("click", () => editSelected((triangle) => { removeTriangle(state.bot.geometry, triangle.id); if (state.bot.core.triangleId === triangle.id) state.bot.core.triangleId = state.bot.geometry.triangles.find((item) => item.type !== "motor")?.id ?? ""; state.selectedTriangleId = null; }));
   $("#set-core-button").addEventListener("click", () => editSelected((triangle) => { if (triangle.type === "motor") { showToast("Motor cannot be a core.", "bad"); return; } state.bot.core.triangleId = triangle.id; }));
   $("#strategy-preset").addEventListener("change", (event) => { state.strategyName = event.target.value; renderStrategy(); });
   $("#apply-strategy-button").addEventListener("click", () => { state.bot.brain = clone(state.examples[state.strategyName].brain); state.bot.metadata.description = strategyDescription(state.strategyName); markDirty(); showToast(`${titleCase(state.strategyName)} brain applied.`); });
@@ -634,6 +657,7 @@ function bindEvents() {
   $("#step-back-button").addEventListener("click", () => { state.currentTick = Math.max(0, state.currentTick - 30); renderBattle(); });
   $("#step-forward-button").addEventListener("click", () => { state.currentTick += 30; renderBattle(); });
   $("#timeline").addEventListener("input", (event) => { state.currentTick = Number(event.target.value); renderBattle(); });
+  $("#damage-map-toggle").addEventListener("change", (event) => { state.damageMapVisible = event.target.checked; renderBattle(); });
   $$(".speed-button").forEach((button) => button.addEventListener("click", () => { state.speed = Number(button.dataset.speed); $$(".speed-button").forEach((item) => item.classList.toggle("active", item === button)); }));
   $("#save-version-button").addEventListener("click", saveVersion);
   $("#submit-button").addEventListener("click", submitCurrent);
@@ -658,14 +682,14 @@ async function boot() {
     state.matchSeed = Number(storedDraft?.matchSeed ?? 1234);
     setBot(storedDraft?.geometry ? storedDraft : state.examples[exampleData.default], storedDraft?.brain ? "spear" : exampleData.default);
     const strategySelect = $("#strategy-preset");
-    strategySelect.innerHTML = exampleData.names.map((name) => `<option value="${name}">${titleCase(name)}</option>`).join("");
-    $("#opponent-select").innerHTML = exampleData.names.filter((name) => name !== "spear").map((name) => `<option value="${name}">${titleCase(name)}</option>`).join("");
+    strategySelect.innerHTML = exampleData.names.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(titleCase(name))}</option>`).join("");
+    $("#opponent-select").innerHTML = exampleData.names.filter((name) => name !== "spear").map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(titleCase(name))}</option>`).join("");
     $("#opponent-select").value = state.opponentName;
     bindEvents();
     renderForge();
     renderBattle();
   } catch (error) {
-    $("#validation-output").innerHTML = `<div class="report-ok" style="color:#ed7772">Cannot reach local web server: ${error.message}</div>`;
+    $("#validation-output").innerHTML = `<div class="report-ok" style="color:#ed7772">Cannot reach local web server: ${escapeHtml(error.message)}</div>`;
   }
 }
 

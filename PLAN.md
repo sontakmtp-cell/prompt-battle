@@ -187,9 +187,11 @@ Triển khai bằng **Docker Compose gồm Caddy, ứng dụng và PostgreSQL**.
 |---|---|---|
 | **M0 — Nền móng** | Workspace, ranh giới mô-đun, schema, ruleset ban đầu, bộ lệnh Brain, lệnh kiểm tra | Schema đọc được, ví dụ hợp lệ, kiểm tra phụ thuộc mô-đun đạt |
 | **M1 — Hai bot tự đánh** | Geometry, Brain, engine, phá hủy, replay dữ liệu, CLI và 5 bot mẫu trong spec | Hai bot đánh hết trận; chạy lại cùng kết quả; Windows/Linux cho cùng hash với 100 seed cố định |
-| **M2 — Chơi trên web** | Editor, Inspector, Viewer, replay controls, lưu phiên bản, tài khoản và ghép trận | Người không biết code tạo bot, simulate, chỉnh sửa, submit và xem trận hoàn chỉnh |
-| **M3 — Demo dùng AI** | Tám MCP tools, OAuth, tài liệu agent, triển khai VPS | ChatGPT và Claude đều thực hiện được tạo → validate → thử → sửa → submit; tải thử đạt trước khi mời người dùng |
+| **M2 — Local web lab** | Editor, Inspector, Viewer, replay controls, lưu version và hàng FIFO local | Người không biết code tạo bot, validate, simulate, chỉnh sửa, submit và xem replay hoàn chỉnh trên browser local |
+| **M3 — Demo dùng AI** | Account/auth, database, matchmaking chính thức, tám MCP tools, OAuth, tài liệu agent, triển khai VPS | ChatGPT và Claude đều thực hiện được tạo → validate → thử → sửa → submit; tải thử đạt trước khi mời người dùng |
 | **M4 — Replay trong chat** | Viewer dùng chung qua MCP Apps | Render thật trên host hỗ trợ; play/pause/seek hoạt động; fallback link hoạt động trên client chỉ có tools |
+
+M2 cố ý là web lab local-first: draft, version và queue dùng `localStorage`, còn account, database, auth và matchmaking chính thức là phạm vi M3. Gate M2 không coi các năng lực hosted đó là đã hoàn tất.
 
 Bộ kiểm tra trọng tâm dùng `node:test`, kèm kiểm tra giao diện và hai AI client thực tế:
 

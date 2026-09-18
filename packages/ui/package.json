@@ -7,6 +7,8 @@
     "@promptchien/contracts": "workspace:*"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./battle-viewer": "./src/battle-viewer.js",
+    "./editor-actions": "./src/editor-actions.js"
   }
 }

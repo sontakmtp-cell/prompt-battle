@@ -8,6 +8,10 @@ import { validateBot } from "../packages/core/src/validation.ts";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const WEB_ROOT = path.join(ROOT, "apps", "web");
+const UI_ASSETS = {
+  "/ui/battle-viewer.js": path.join(ROOT, "packages", "ui", "src", "battle-viewer.js"),
+  "/ui/editor-actions.js": path.join(ROOT, "packages", "ui", "src", "editor-actions.js")
+};
 const RULESET_PATH = path.join(ROOT, "packages", "core", "rulesets", "v0.1.json");
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
 const PORT = Number(process.env.PROMPTCHIEN_WEB_PORT ?? 4173);
@@ -137,6 +141,10 @@ async function serveStatic(response, pathname) {
     response.end("bad path");
     return;
   }
+  return serveFile(response, filePath);
+}
+
+async function serveFile(response, filePath) {
   try {
     const body = await readFile(filePath);
     response.writeHead(200, {
@@ -159,6 +167,10 @@ const server = createServer(async (request, response) => {
     }
     if (request.method !== "GET") {
       sendJson(response, 405, { error: "method not allowed" });
+      return;
+    }
+    if (UI_ASSETS[requestUrl.pathname]) {
+      await serveFile(response, UI_ASSETS[requestUrl.pathname]);
       return;
     }
     await serveStatic(response, requestUrl.pathname);
