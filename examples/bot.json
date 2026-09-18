@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "promptchien.bot/0.1",
+  "metadata": {
+    "name": "M0 Spear Seed",
+    "description": "Ví dụ nhỏ để kiểm tra schema và Brain DSL."
+  },
+  "geometry": {
+    "grid": "tri-v1",
+    "triangles": [
+      { "id": "t-core", "type": "hammer", "x": 0, "y": 0, "orientation": "up" },
+      { "id": "t-guard", "type": "paper", "x": -1, "y": 0, "orientation": "down" },
+      { "id": "t-wing", "type": "scissor", "x": 1, "y": 0, "orientation": "down" },
+      { "id": "t-motor", "type": "motor", "x": 0, "y": -1, "orientation": "down" }
+    ]
+  },
+  "core": {
+    "triangleId": "t-core"
+  },
+  "brain": {
+    "language": "promptchien-brain-v1",
+    "entry": "main",
+    "rules": [
+      {
+        "id": "engage",
+        "when": {
+          "all": [
+            { "read": "SCAN_ENEMY", "op": "eq", "value": true }
+          ]
+        },
+        "then": [
+          { "command": "MOVE", "direction": "toward_enemy", "power": 1000 },
+          { "command": "ROTATE", "direction": "toward_enemy", "power": 1000 }
+        ]
+      }
+    ],
+    "fallback": [
+      { "command": "MOVE", "direction": "none", "power": 0 },
+      { "command": "ROTATE", "direction": "right", "power": 400 }
+    ]
+  }
+}

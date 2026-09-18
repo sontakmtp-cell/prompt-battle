@@ -1,0 +1,117 @@
+{
+  "rulesetVersion": "promptchien.ruleset/0.1",
+  "engineCompatibility": "promptchien.engine/0.1",
+  "units": {
+    "multiplierScale": 1000,
+    "damageDenominator": 1000000000
+  },
+  "geometry": {
+    "grid": "tri-v1",
+    "maxTriangles": 60,
+    "maxWidth": 12,
+    "maxHeight": 12,
+    "coreCount": 1,
+    "arenaHalfSize": 20
+  },
+  "triangles": {
+    "hammer": { "hp": 70, "baseDamage": 24 },
+    "scissor": { "hp": 105, "baseDamage": 16 },
+    "paper": { "hp": 168, "baseDamage": 10 },
+    "motor": { "hp": 80, "baseDamage": 0 }
+  },
+  "combat": {
+    "rps": {
+      "advantage": 2000,
+      "neutral": 1000,
+      "disadvantage": 500,
+      "motorDamageMultiplier": 1000,
+      "advantagePairs": [
+        ["hammer", "scissor"],
+        ["scissor", "paper"],
+        ["paper", "hammer"]
+      ]
+    },
+    "impact": {
+      "referenceSpeed": 4000,
+      "base": 850,
+      "range": 150,
+      "rMax": 1000
+    },
+    "orientation": {
+      "base": 850,
+      "range": 150,
+      "lutSteps": 64,
+      "lut": [
+        1000, 999, 997, 994, 989, 982, 975, 966, 956,
+        945, 933, 921, 907, 894, 879, 865, 850,
+        850, 850, 850, 850, 850, 850, 850, 850,
+        850, 850, 850, 850, 850, 850, 850, 850,
+        850, 850, 850, 850, 850, 850, 850, 850,
+        850, 850, 850, 850, 850, 850, 850, 850,
+        850, 850, 850, 850, 850, 850, 850, 850,
+        850, 850, 850, 850, 850, 850, 850
+      ]
+    }
+  },
+  "diversity": {
+    "bonusPerType": 120,
+    "maxTypes": 3,
+    "countMotor": false,
+    "applyTo": "max_hp",
+    "recalculateOn": "structure_change"
+  },
+  "monoType": {
+    "warningThreshold": 650,
+    "blockThreshold": 800,
+    "blockEnabled": false
+  },
+  "hit": {
+    "cooldownTicks": 6,
+    "cooldownScope": "per_triangle_defender"
+  },
+  "core": {
+    "count": 1,
+    "onMotorAllowed": false
+  },
+  "motor": {
+    "pullPerMotor": 4,
+    "effectiveLoadUsesMaxLocked": true,
+    "speedBands": [
+      { "maxLoadFactor": 500, "speedMultiplier": 1150 },
+      { "minLoadFactorExclusive": 500, "maxLoadFactor": 1000, "speedMultiplier": 1000 },
+      { "minLoadFactorExclusive": 1000, "maxLoadFactor": 1500, "speedMultiplier": 700 },
+      { "minLoadFactorExclusive": 1500, "maxLoadFactor": 2000, "speedMultiplier": 400 },
+      { "minLoadFactorExclusive": 2000, "speedMultiplier": 150 }
+    ]
+  },
+  "ring": {
+    "startTick": 1800,
+    "endTick": 3600,
+    "startRadius": 28300,
+    "endRadius": 4000,
+    "announceTicks": 45,
+    "drainPercentOfMaxHpPerTick": 15
+  },
+  "score": {
+    "damageWeight": 350,
+    "coreWeight": 300,
+    "combatTriangleWeight": 200,
+    "motorWeight": 150,
+    "weightScale": 1000,
+    "damageNormalization": "direct_opponent_max"
+  },
+  "brain": {
+    "apiVersion": "promptchien-brain-v1",
+    "maxNodes": 256,
+    "maxDepth": 16,
+    "maxIntegerVariables": 32,
+    "maxStepsPerTick": 1000
+  },
+  "match": {
+    "tickRate": 30,
+    "maxTicks": 3600,
+    "maxSeconds": 120,
+    "maxCombatIncapacityTicks": 300,
+    "maxTriangles": 60
+  }
+}

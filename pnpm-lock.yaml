@@ -1,0 +1,23 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  packages/contracts: {}
+
+  packages/core:
+    dependencies:
+      '@promptchien/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
+  packages/ui:
+    dependencies:
+      '@promptchien/contracts':
+        specifier: workspace:*
+        version: link:../contracts

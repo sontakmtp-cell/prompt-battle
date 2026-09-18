@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "promptchien.replay/0.1",
+  "manifest": {
+    "matchId": "m0-example",
+    "engineVersion": "promptchien.engine/0.1",
+    "rulesetVersion": "promptchien.ruleset/0.1",
+    "botAHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "botBHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "seed": 1,
+    "result": { "winner": "draw", "reason": "timeout" },
+    "replayHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "events": [
+    { "tick": 3600, "kind": "matchEnd", "data": { "winner": "draw", "reason": "timeout" } }
+  ],
+  "checkpoints": [
+    { "tick": 0, "stateHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" }
+  ]
+}

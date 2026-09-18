@@ -1,0 +1,12 @@
+{
+  "name": "@promptchien/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@promptchien/contracts": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

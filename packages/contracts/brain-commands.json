@@ -1,0 +1,16 @@
+{
+  "version": "promptchien.brain/0.1",
+  "reads": [
+    "GET_SELF_STATUS",
+    "GET_DAMAGE_MAP",
+    "GET_MOTOR_STATUS",
+    "SCAN_ENEMY",
+    "GET_ENEMY_POSITION",
+    "GET_ENEMY_DIRECTION"
+  ],
+  "actions": [
+    "MOVE",
+    "ROTATE",
+    "MOVE_TO"
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://promptchien.dev/schema/replay/0.1.json",
+  "title": "PROMPT Chiến Replay",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "manifest", "events", "checkpoints"],
+  "properties": {
+    "schemaVersion": { "const": "promptchien.replay/0.1" },
+    "manifest": { "$ref": "#/$defs/manifest" },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/event" }
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/checkpoint" }
+    }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "matchId",
+        "engineVersion",
+        "rulesetVersion",
+        "botAHash",
+        "botBHash",
+        "seed",
+        "result",
+        "replayHash"
+      ],
+      "properties": {
+        "matchId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "engineVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "rulesetVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "botAHash": { "$ref": "#/$defs/hash" },
+        "botBHash": { "$ref": "#/$defs/hash" },
+        "seed": { "type": "integer", "minimum": 0 },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["winner", "reason"],
+          "properties": {
+            "winner": { "enum": ["A", "B", "draw"] },
+            "reason": { "enum": ["core", "incap", "timeout"] }
+          }
+        },
+        "replayHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tick", "kind", "data"],
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "kind": {
+          "enum": [
+            "hit",
+            "destroy",
+            "detach",
+            "motorLost",
+            "overload",
+            "coreHit",
+            "coreDestroyed",
+            "ringStart",
+            "ringEnter",
+            "ringExit",
+            "matchEnd"
+          ]
+        },
+        "data": { "type": "object" }
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tick", "stateHash"],
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "stateHash": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

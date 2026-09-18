@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://promptchien.dev/schema/bot/0.1.json",
+  "title": "PROMPT Chiến Bot Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "metadata", "geometry", "core", "brain"],
+  "properties": {
+    "schemaVersion": { "const": "promptchien.bot/0.1" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "geometry": { "$ref": "#/$defs/geometry" },
+    "core": { "$ref": "#/$defs/core" },
+    "brain": { "$ref": "#/$defs/brain" }
+  },
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "description": { "type": "string", "maxLength": 280 }
+      }
+    },
+    "triangle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "x", "y", "orientation"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{1,31}$"
+        },
+        "type": {
+          "enum": ["hammer", "scissor", "paper", "motor"]
+        },
+        "x": { "type": "integer", "minimum": -128, "maximum": 128 },
+        "y": { "type": "integer", "minimum": -128, "maximum": 128 },
+        "orientation": { "enum": ["up", "down"] }
+      }
+    },
+    "geometry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grid", "triangles"],
+      "properties": {
+        "grid": { "const": "tri-v1" },
+        "triangles": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 60,
+          "items": { "$ref": "#/$defs/triangle" }
+        }
+      }
+    },
+    "core": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["triangleId"],
+      "properties": {
+        "triangleId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{1,31}$"
+        }
+      }
+    },
+    "predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read", "op", "value"],
+      "properties": {
+        "read": {
+          "enum": [
+            "GET_SELF_STATUS",
+            "GET_DAMAGE_MAP",
+            "GET_MOTOR_STATUS",
+            "SCAN_ENEMY",
+            "GET_ENEMY_POSITION",
+            "GET_ENEMY_DIRECTION"
+          ]
+        },
+        "op": { "enum": ["eq", "neq", "gt", "gte", "lt", "lte"] },
+        "value": { "type": ["boolean", "integer", "string"] }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["all"],
+      "properties": {
+        "all": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/predicate" }
+        }
+      }
+    },
+    "action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["command", "direction", "power"],
+          "properties": {
+            "command": { "const": "MOVE" },
+            "direction": {
+              "enum": ["forward", "backward", "toward_enemy", "away_from_enemy", "none"]
+            },
+            "power": { "type": "integer", "minimum": 0, "maximum": 1000 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["command", "direction", "power"],
+          "properties": {
+            "command": { "const": "ROTATE" },
+            "direction": {
+              "enum": ["left", "right", "toward_enemy", "away_from_enemy", "none"]
+            },
+            "power": { "type": "integer", "minimum": 0, "maximum": 1000 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["command", "target", "power"],
+          "properties": {
+            "command": { "const": "MOVE_TO" },
+            "target": { "enum": ["enemy", "core", "arena_center"] },
+            "power": { "type": "integer", "minimum": 0, "maximum": 1000 }
+          }
+        }
+      ]
+    },
+    "actionList": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/action" }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "when", "then"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{1,31}$"
+        },
+        "when": { "$ref": "#/$defs/condition" },
+        "then": { "$ref": "#/$defs/actionList" }
+      }
+    },
+    "brain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["language", "entry", "rules", "fallback"],
+      "properties": {
+        "language": { "const": "promptchien-brain-v1" },
+        "entry": { "const": "main" },
+        "rules": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/rule" }
+        },
+        "fallback": { "$ref": "#/$defs/actionList" }
+      }
+    }
+  }
+}
